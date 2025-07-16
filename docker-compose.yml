@@ -1,9 +1,11 @@
 services:
   userservice:
-    image: ${DOCKER_REGISTRY-}userservice
     build:
       context: Services/userService
       dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+      - "5001:5001"
     depends_on:
       - user-db
   user-db:
