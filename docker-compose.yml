@@ -8,6 +8,9 @@ services:
       - "5001:5001"
     depends_on:
       - user-db
+    networks:
+      - public-network
+      - user-network
   user-db:
     image: postgres:15
     environment:
@@ -15,7 +18,19 @@ services:
         - POSTGRES_USER=postgres
         - POSTGRES_PASSWORD=postgres
     volumes:
-        - ./.containers/user-db:/var/lib/postresql/data
+        - user-db:/var/lib/postresql/data
     ports:
         - 5432:5432
+    networks:
+      - user-network
+
+networks:
+  public-network:
+    driver: bridge
+  user-network:
+    driver: bridge
+    internal: true
+
+volumes:
+  user-db:
       
