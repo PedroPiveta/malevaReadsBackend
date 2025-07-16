@@ -1,0 +1,19 @@
+services:
+  userservice:
+    image: ${DOCKER_REGISTRY-}userservice
+    build:
+      context: Services/userService
+      dockerfile: Dockerfile
+    depends_on:
+      - user-db
+  user-db:
+    image: postgres:15
+    environment:
+        - POSTGRES_DB=users
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=postgres
+    volumes:
+        - ./.containers/user-db:/var/lib/postresql/data
+    ports:
+        - 5432:5432
+      
