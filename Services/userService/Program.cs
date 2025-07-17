@@ -1,9 +1,11 @@
+global using userService.Models;
+global using userService.Services;
+
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using userService.Extensions;
-using UserService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,12 +27,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddDbContext<AppDbContext>(options => 
    options.UseNpgsql(builder.Configuration.GetConnectionString("Database")));
 
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<AuthService>();
 
-var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? builder.Configuration["Jwt:Key"];
+var jwtKey = builder.Configuration["Jwt:Key"];
 
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
@@ -85,8 +90,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
 app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
