@@ -1,5 +1,6 @@
 global using userService.Models;
 global using userService.Services;
+global using userService.Data.Repositories;
 
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
 

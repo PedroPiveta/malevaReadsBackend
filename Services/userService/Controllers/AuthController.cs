@@ -1,56 +1,41 @@
 using System.Security.Claims;
-using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using userService.DTOs.User;
+using userService.Services;
 
 [ApiController]
 [Route("api/users")]
 public class AuthController : ControllerBase
 {
-    private readonly AppDbContext _context;
-    private readonly TokenService _tokenService;
+    private readonly IUserService _userService;
+    private readonly AuthService _authService;
 
-    public AuthController(AppDbContext context, TokenService tokenService)
+    public AuthController(IUserService userService, AuthService authService)
     {
-        _context = context;
-        _tokenService = tokenService;
+        _userService = userService;
+        _authService = authService;
     }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterDto dto)
     {
-        if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
-            return BadRequest("Email já registrado.");
-
-        CreatePasswordHash(dto.Password, out byte[] hash, out byte[] salt);
-
-        var user = new User
-        {
-            Username = dto.Username,
-            Email = dto.Email,
-            FirstName = dto.FirstName,
-            LastName = dto.LastName,
-            PasswordHash = hash,
-            PasswordSalt = salt,
-        };
-
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-
-        var token = _tokenService.GenerateToken(user);
+        var (success, token, error) = await _userService.RegisterAsync(dto);
+        
+        if (!success)
+            return BadRequest(error);
+            
         return Ok(new { token });
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginDto dto)
     {
-        var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == dto.Email);
-        if (user is null || !VerifyPasswordHash(dto.Password, user.PasswordHash, user.PasswordSalt))
-            return Unauthorized("Email ou senha inválidos.");
+        var (success, token, error) = await _userService.LoginAsync(dto);
         
-        var token = _tokenService.GenerateToken(user);
+        if (!success)
+            return Unauthorized(error);
+            
         return Ok(new { token });
     }
 
@@ -58,19 +43,7 @@ public class AuthController : ControllerBase
     [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetAllUsers()
     {
-        var users = await _context.Users.Select(u => new GetDto
-        {
-            Id = u.Id,
-            Username = u.Username,
-            FirstName = u.FirstName,
-            LastName = u.LastName,
-            Email = u.Email,
-            ProfilePicUrl = u.ProfilePicUrl,
-            CreatedAt = u.CreatedAt,
-            LastLogin = u.LastLogin,
-            Role = u.Role,
-        }).ToListAsync();
-
+        var users = await _userService.GetAllUsersAsync();
         return Ok(users);
     }
 
@@ -78,26 +51,12 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> GetOwnProfile()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = _authService.GetUserId();
 
         if (userId == null)
             return Unauthorized();
 
-        var user = await _context.Users
-        .Where(u => u.Id == int.Parse(userId))
-        .Select(u => new GetDto
-        {
-            Id = u.Id,
-            Username = u.Username,
-            FirstName = u.FirstName,
-            LastName = u.LastName,
-            Email = u.Email,
-            ProfilePicUrl = u.ProfilePicUrl,
-            CreatedAt = u.CreatedAt,
-            LastLogin = u.LastLogin,
-            Role = u.Role,
-        })
-        .FirstOrDefaultAsync();
+        var user = await _userService.GetUserByIdAsync(userId.Value);
 
         if (user == null)
             return NotFound();
@@ -109,36 +68,20 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<IActionResult> UpdateOwnProfile([FromBody] UpdateProfileDto dto)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = _authService.GetUserId();
 
         if (userId == null)
             return Unauthorized();
 
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == int.Parse(userId));
+        var (success, error) = await _userService.UpdateUserProfileAsync(userId.Value, dto);
 
-        if (user == null)
+        if (!success)
             return NotFound();
-
-        user.Username = dto.Username;
-
-        await _context.SaveChangesAsync();
 
         return Ok();
     }
 
 
 
-    private void CreatePasswordHash(string password, out byte[] hash, out byte[] salt)
-    {
-        using var hmac = new System.Security.Cryptography.HMACSHA512();
-        salt = hmac.Key;
-        hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
-    }
 
-    private bool VerifyPasswordHash(string password, byte[] storedHash, byte[] storedSalt)
-    {
-        using var hmac = new System.Security.Cryptography.HMACSHA512(storedSalt);
-        var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
-        return computedHash.SequenceEqual(storedHash);
-    }
 }
