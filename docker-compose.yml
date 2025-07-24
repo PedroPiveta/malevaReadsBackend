@@ -1,5 +1,5 @@
 services:
-  userservice:
+  user-service:
     build:
       context: Services/userService
       dockerfile: Dockerfile
@@ -29,6 +29,35 @@ services:
         - 5432:5432
     networks:
       - user-network
+  book-service:
+    build:
+      context: Services/bookService
+      dockerfile: Dockerfile
+    ports:
+      - "7000:7000"
+      - "7001:7001"
+    depends_on:
+      book-db:
+        condition: service_healthy
+    networks:
+      - public-network
+      - book-network
+  book-db:
+    image: mongo:7.0.22
+    environment:
+      MONGO_INITDB_DATABASE: books
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - book-db:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - book-network
+
 
 networks:
   public-network:
@@ -36,7 +65,11 @@ networks:
   user-network:
     driver: bridge
     internal: true
+  book-network:
+    driver: bridge
+    internal: true
 
 volumes:
   user-db:
+  book-db:
       

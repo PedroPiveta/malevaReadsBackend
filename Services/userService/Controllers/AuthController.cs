@@ -25,7 +25,7 @@ public class AuthController : ControllerBase
         if (!success)
             return BadRequest(error);
             
-        return Ok(new { token });
+        return Created("api/user/register", new { token });
     }
 
     [HttpPost("login")]
