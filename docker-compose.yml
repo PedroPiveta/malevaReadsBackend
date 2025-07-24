@@ -1,4 +1,16 @@
 services:
+  gateway-service:
+    build:
+      context: ./gatewayService
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+    depends_on:
+      - user-service
+      - book-service 
+    networks:
+      - public-network
   user-service:
     build:
       context: Services/userService

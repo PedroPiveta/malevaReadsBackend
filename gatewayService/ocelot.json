@@ -1,0 +1,79 @@
+{
+    "Routes": [
+        {
+            "DownstreamPathTemplate": "/api/users/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "user-service",
+                    "Port": 5000
+                }
+            ],
+            "UpstreamPathTemplate": "/users/{everything}",
+            "UpstreamHttpMethod": [
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE"
+            ],
+            "SwaggerKey": "users"
+        },
+        {
+            "DownstreamPathTemplate": "/api/books/{everything}",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "book-service",
+                    "Port": 7000
+                }
+            ],
+            "UpstreamPathTemplate": "/books/{everything}",
+            "UpstreamHttpMethod": [
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE"
+            ],
+            "SwaggerKey": "books"
+        },
+        {
+            "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+            "DownstreamScheme": "http",
+            "DownstreamHostAndPorts": [
+                {
+                    "Host": "book-service",
+                    "Port": 7000
+                }
+            ],
+            "UpstreamPathTemplate": "/books/swagger/v1/swagger.json",
+            "UpstreamHttpMethod": [
+                "GET"
+            ]
+        }
+    ],
+    "GlobalConfiguration": {
+        "BaseUrl": "http://localhost:8080"
+    },
+    "SwaggerEndPoints": [
+        {
+            "Key": "users",
+            "Config": [
+                {
+                    "Name": "User Service",
+                    "Version": "v1",
+                    "Url": "http://user-service:5000/swagger/v1/swagger.json"
+                }
+            ]
+        },
+        {
+            "Key": "books",
+            "Config": [
+                {
+                    "Name": "Book Service",
+                    "Version": "v1",
+                    "Url": "http://book-service:7000/swagger/v1/swagger.json"
+                }
+            ]
+        }
+    ]
+}
