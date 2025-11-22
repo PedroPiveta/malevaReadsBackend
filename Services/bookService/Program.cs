@@ -4,6 +4,7 @@ global using bookService.Services;
 global using bookService.DTOs;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using bookService.ExternalProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,11 @@ builder.Services.AddCors(options =>
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddScoped<IBookRepository, BookRepository>();
 builder.Services.AddScoped<IBookService, BookService>();
+
+// External book services
+builder.Services.AddHttpClient<OpenLibraryProvider>();
+builder.Services.AddScoped<IExternalBookProvider, OpenLibraryProvider>();
+builder.Services.AddScoped<IExternalBookService, ExternalBookService>();
 
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
